@@ -101,24 +101,39 @@ def perform_eda_func(data, agent):
     df_sample = data.head(5).to_string() 
     df_stats = data.describe(include='all').to_string()
     
-    prompt = f"""You are an expert Python Data Analyst. 
-
-Your task is to write a single, self-contained Python function named `perform_eda(df)` that performs basic Exploratory Data Analysis on a pandas DataFrame.
+    prompt = f"""You are an expert Python Data Analyst.
+Your task is to write a single, self-contained Python function named `perform_eda(df)` that performs basic Exploratory Data Analysis on a pandas DataFrame and returns the results as a dictionary.
 
 DATA CONTEXT:
-Use the following data sample and statistics to understand the schema and tailor your code (e.g., handling specific column types if necessary).
+Use the following data sample and statistics to understand the schema and tailor your code (e.g., handling specific column types, datetime parsing, or categorical vs numeric logic if necessary).
 - Data Sample:\n{df_sample}
 - Data Stats:\n{df_stats}
 
 REQUIREMENTS:
-1. The function `perform_eda(df)` must calculate and return key metrics in a dictionary: shape, size, data types, column names, and missing values per column.
-2. Include all necessary imports (e.g., `import pandas as pd`) inside or above the function.
-3. The returned code must be generalized to run on the full version of this dataset.
+The function `perform_eda(df)` must calculate and return the following as a single dictionary:
+1. `shape` - tuple of (rows, columns)
+2. `size` - total number of elements
+3. `dtypes` - dictionary of column name to data type (as strings, not dtype objects)
+4. `columns` - list of column names
+5. `missing_values` - dictionary of column name to count of missing/null values
+6. `missing_percentage` - dictionary of column name to percentage of missing values
+7. `duplicate_rows` - count of fully duplicate rows
+8. `numeric_summary` - summary statistics (mean, std, min, max, quartiles) for numeric columns only, as a dictionary (use `.to_dict()` on the describe() output)
+9. `unique_counts` - dictionary of column name to number of unique values
+
+REQUIREMENTS FOR CODE QUALITY:
+- Include all necessary imports (e.g., `import pandas as pd`, `import numpy as np`) inside or above the function.
+- Handle edge cases gracefully: empty DataFrames, columns with all-null values, and non-numeric columns being passed to numeric operations.
+- Ensure all dictionary values are JSON-serializable (convert numpy types like `np.int64`/`np.float64` to native Python `int`/`float`, and convert dtype objects to strings).
+- The function must not raise an exception on valid pandas DataFrames.
+- The code must be generalized to run on the full version of this dataset, not just the sample shown above.
 
 CONSTRAINTS:
-- Output ONLY valid, executable Python code. 
+- Output ONLY valid, executable Python code.
+- The code must define exactly one function: `perform_eda(df)`.
 - DO NOT wrap the output in markdown code blocks (e.g., no ```python ... ```).
-- DO NOT include any conversational filler, explanations, or print statements outside the function.
+- DO NOT include any conversational filler, explanations, comments about the task, or print statements outside the function.
+- DO NOT include example usage or a call to `perform_eda()` at the end of the script.
 """
 
   response = agent.invoke({'messages':[{'role':'user','content':prompt}]})
@@ -139,26 +154,39 @@ CONSTRAINTS:
     # to use for the multivariate bar plots (like Sales, Region, Segment).
     schema = data.dtypes.to_string()
     
-    prompt = f"""You are an Expert Data Scientist. Your task is to write a comprehensive, modular Python script to perform Advanced Exploratory Data Analysis (EDA) on a dataset.
+    advance_prompt = f"""You are an expert Python Data Analyst.
+Your task is to write a single, self-contained Python function named `perform_eda(df)` that performs basic Exploratory Data Analysis on a pandas DataFrame and returns the results as a dictionary.
 
-DATA SCHEMA:
-Use the following column names and data types to dynamically generate your analysis code:
-\n{schema}\n
+DATA CONTEXT:
+Use the following data sample and statistics to understand the schema and tailor your code (e.g., handling specific column types, datetime parsing, or categorical vs numeric logic if necessary).
+- Data Sample:\n{df_sample}
+- Data Stats:\n{df_stats}
 
 REQUIREMENTS:
-1. DEPENDENCIES: At the very top of the script, include standard Python code using `subprocess` and `sys` to `pip install` any required modules (e.g., seaborn, matplotlib, pandas) if they are not already installed.
-2. MODULAR ARCHITECTURE: Write distinct functions for each of the following tasks:
-   - `get_summary()`: Print `.describe()` for both numerical and object columns.
-   - `get_correlation()`: Calculate and display the correlation matrix.
-   - `univariate_analysis()`: Generate distributions (e.g., histograms/boxplots) for numerical columns and value counts for object columns.
-   - `multivariate_analysis()`: Generate bar plots using `seaborn` with the `hue` parameter to show relationships across multiple columns (e.g., comparing a numeric metric like Sales across a categorical Region, segmented by a hue like Segment).
-3. MAIN EXECUTION: Include a `main(df)` function that sequentially calls all the modular functions above.
+The function `perform_eda(df)` must calculate and return the following as a single dictionary:
+1. `shape` - tuple of (rows, columns)
+2. `size` - total number of elements
+3. `dtypes` - dictionary of column name to data type (as strings, not dtype objects)
+4. `columns` - list of column names
+5. `missing_values` - dictionary of column name to count of missing/null values
+6. `missing_percentage` - dictionary of column name to percentage of missing values
+7. `duplicate_rows` - count of fully duplicate rows
+8. `numeric_summary` - summary statistics (mean, std, min, max, quartiles) for numeric columns only, as a dictionary (use `.to_dict()` on the describe() output)
+9. `unique_counts` - dictionary of column name to number of unique values
+
+REQUIREMENTS FOR CODE QUALITY:
+- Include all necessary imports (e.g., `import pandas as pd`, `import numpy as np`) inside or above the function.
+- Handle edge cases gracefully: empty DataFrames, columns with all-null values, and non-numeric columns being passed to numeric operations.
+- Ensure all dictionary values are JSON-serializable (convert numpy types like `np.int64`/`np.float64` to native Python `int`/`float`, and convert dtype objects to strings).
+- The function must not raise an exception on valid pandas DataFrames.
+- The code must be generalized to run on the full version of this dataset, not just the sample shown above.
 
 CONSTRAINTS:
-- Output ONLY valid, executable Python code. 
-- DO NOT include markdown formatting (no ```python blocks).
-- DO NOT include conversational text.
-- Ensure the code handles potential errors (e.g., skipping correlation if no numeric columns exist).
+- Output ONLY valid, executable Python code.
+- The code must define exactly one function: `perform_eda(df)`.
+- DO NOT wrap the output in markdown code blocks (e.g., no ```python ... ```).
+- DO NOT include any conversational filler, explanations, comments about the task, or print statements outside the function.
+- DO NOT include example usage or a call to `perform_eda()` at the end of the script.
 """
   response = agent.invoke({'messages':[{'role':'user','content':advance_prompt}]})
   system_prompt_model = response["messages"][-1].content[-1]['text']
