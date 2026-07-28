@@ -91,20 +91,35 @@ def read_file(path):
 
   # tool 3
 def perform_eda_func(data, agent):
-  """This Function takes data as an input
-  and return basic eda for this given dataset
-  pick data sample and perform analysis
-  like shape, size etc, give code for that,
-  agent will execute and get answer
   """
+    Takes a pandas DataFrame as input and passes a sample to an AI agent.
+    The agent is tasked with generating a custom Python function (`perform_eda`) 
+    to perform basic Exploratory Data Analysis based on the dataset's schema.
+    """
+    
+    # Use .head(5) for consistency, and convert to string or dict so the LLM reads it cleanly
+    df_sample = data.head(5).to_string() 
+    df_stats = data.describe(include='all').to_string()
+    
+    prompt = f"""You are an expert Python Data Analyst. 
 
-  df = data.sample(5)
-  prompt = f"""You are a data analysts perform
-  basic eda python single function perform_eda
-  code and give all required
-  analysis like missing values and columns
-  Data frame sample : {df}
-  data stats: {df.describe()}"""
+Your task is to write a single, self-contained Python function named `perform_eda(df)` that performs basic Exploratory Data Analysis on a pandas DataFrame.
+
+DATA CONTEXT:
+Use the following data sample and statistics to understand the schema and tailor your code (e.g., handling specific column types if necessary).
+- Data Sample:\n{df_sample}
+- Data Stats:\n{df_stats}
+
+REQUIREMENTS:
+1. The function `perform_eda(df)` must calculate and return key metrics in a dictionary: shape, size, data types, column names, and missing values per column.
+2. Include all necessary imports (e.g., `import pandas as pd`) inside or above the function.
+3. The returned code must be generalized to run on the full version of this dataset.
+
+CONSTRAINTS:
+- Output ONLY valid, executable Python code. 
+- DO NOT wrap the output in markdown code blocks (e.g., no ```python ... ```).
+- DO NOT include any conversational filler, explanations, or print statements outside the function.
+"""
 
   response = agent.invoke({'messages':[{'role':'user','content':prompt}]})
   ans = response["messages"][-1].content[-1]['text']
@@ -115,14 +130,36 @@ def perform_eda_func(data, agent):
 
 
   #====================AdvaNce EDA======================
-  advance_prompt = """give detailed prompt for
-  advance data analysis, which must include
-  describe, corr, univariate numerical and obbject column analysis
-  multivariate analysis to perform
-  different col like example sales, region, segment
-  using bat plot with hue, give code with strict python
-  and module code with pip intall for any unknown new module if required"""
+ """
+    Passes the dataset's schema to the agent to generate an advanced, 
+    modular EDA script with specific univariate and multivariate requirements.
+    """
+    
+    # Extracting columns and datatypes helps the LLM know exactly which columns 
+    # to use for the multivariate bar plots (like Sales, Region, Segment).
+    schema = data.dtypes.to_string()
+    
+    prompt = f"""You are an Expert Data Scientist. Your task is to write a comprehensive, modular Python script to perform Advanced Exploratory Data Analysis (EDA) on a dataset.
 
+DATA SCHEMA:
+Use the following column names and data types to dynamically generate your analysis code:
+\n{schema}\n
+
+REQUIREMENTS:
+1. DEPENDENCIES: At the very top of the script, include standard Python code using `subprocess` and `sys` to `pip install` any required modules (e.g., seaborn, matplotlib, pandas) if they are not already installed.
+2. MODULAR ARCHITECTURE: Write distinct functions for each of the following tasks:
+   - `get_summary()`: Print `.describe()` for both numerical and object columns.
+   - `get_correlation()`: Calculate and display the correlation matrix.
+   - `univariate_analysis()`: Generate distributions (e.g., histograms/boxplots) for numerical columns and value counts for object columns.
+   - `multivariate_analysis()`: Generate bar plots using `seaborn` with the `hue` parameter to show relationships across multiple columns (e.g., comparing a numeric metric like Sales across a categorical Region, segmented by a hue like Segment).
+3. MAIN EXECUTION: Include a `main(df)` function that sequentially calls all the modular functions above.
+
+CONSTRAINTS:
+- Output ONLY valid, executable Python code. 
+- DO NOT include markdown formatting (no ```python blocks).
+- DO NOT include conversational text.
+- Ensure the code handles potential errors (e.g., skipping correlation if no numeric columns exist).
+"""
   response = agent.invoke({'messages':[{'role':'user','content':advance_prompt}]})
   system_prompt_model = response["messages"][-1].content[-1]['text']
 
