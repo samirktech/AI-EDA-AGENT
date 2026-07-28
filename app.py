@@ -105,7 +105,7 @@ if not (GOOGLE_API_KEY and GROQ_API_KEY):
     st.stop()
 
 llm = (
-    ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=GOOGLE_API_KEY)
+    ChatGoogleGenerativeAI(model="gemini-3.5-flash-lite", google_api_key=GOOGLE_API_KEY)
     if model_choice == "Gemini"
     else ChatGroq(model="llama-3.3-70b-versatile", api_key=GROQ_API_KEY)
 )
